@@ -4,20 +4,28 @@ import Browser
 import Html exposing (Html, Attribute, div, input, text, button)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
+import String
 
 main =
-  Browser.sandbox { init = init, update = update, view = view }
+  Browser.element
+    { init = init
+    , update = update
+    , subscriptions = subscriptions
+    , view = view
+    }
 
 type alias Model =
   { horizontalNames : List String
   , verticalNames : List String
   }
 
-init : Model
-init =
-  { horizontalNames = [ "" ]
-  , verticalNames = [ "" ]
-  }
+init : () -> (Model, Cmd Msg)
+init _ =
+  ( { horizontalNames = [ "" ]
+    , verticalNames = [ "" ]
+    }
+  , Cmd.none
+  )
 
 type Msg
   = AddHorizontalNameAtBottom
@@ -37,17 +45,21 @@ updateListItem index item list =
             then item :: xs
             else x :: updateListItem (index - 1) item xs
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     AddHorizontalNameAtBottom ->
-      { model | horizontalNames = model.horizontalNames ++ [""] }
+      ({ model | horizontalNames = model.horizontalNames ++ [""] }, Cmd.none)
     ChangeHorizontalName index newName ->
-      { model | horizontalNames = updateListItem index newName model.horizontalNames }
+      ({ model | horizontalNames = updateListItem index newName model.horizontalNames }, Cmd.none)
     AddVerticalNameAtBottom ->
-      { model | verticalNames = model.verticalNames ++ [""] }
+      ({ model | verticalNames = model.verticalNames ++ [""] }, Cmd.none)
     ChangeVerticalName index newName ->
-      { model | verticalNames = updateListItem index newName model.verticalNames }
+      ({ model | verticalNames = updateListItem index newName model.verticalNames }, Cmd.none)
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+  Sub.none
 
 viewNames : (Int -> String -> Msg) -> Int -> List String -> List (Html Msg)
 viewNames updateName index names =
