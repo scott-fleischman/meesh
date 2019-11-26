@@ -10,15 +10,20 @@ main =
 
 type alias Model =
   { horizontalNames : List String
+  , verticalNames : List String
   }
 
 init : Model
 init =
-  { horizontalNames = [ "" ] }
+  { horizontalNames = [ "" ]
+  , verticalNames = [ "" ]
+  }
 
 type Msg
   = AddHorizontalNameAtBottom
   | ChangeHorizontalName Int String
+  | AddVerticalNameAtBottom
+  | ChangeVerticalName Int String
 
 updateListItem : Int -> a -> List a -> List a
 updateListItem index item list =
@@ -39,23 +44,33 @@ update msg model =
       { model | horizontalNames = model.horizontalNames ++ [""] }
     ChangeHorizontalName index newName ->
       { model | horizontalNames = updateListItem index newName model.horizontalNames }
+    AddVerticalNameAtBottom ->
+      { model | verticalNames = model.verticalNames ++ [""] }
+    ChangeVerticalName index newName ->
+      { model | verticalNames = updateListItem index newName model.verticalNames }
 
-viewHorizontalNames : Int -> List String -> List (Html Msg)
-viewHorizontalNames index names =
+viewNames : (Int -> String -> Msg) -> Int -> List String -> List (Html Msg)
+viewNames updateName index names =
   case names of
     [] -> []
     name :: remainingNames ->
-      div [] [ input [ placeholder "Name", value name, onInput (ChangeHorizontalName index) ] [] ]
-      :: viewHorizontalNames (index + 1) remainingNames
+      div [] [ input [ placeholder "Name", value name, onInput (updateName index) ] [] ]
+      :: viewNames updateName (index + 1) remainingNames
+
+viewNamesSection : String -> (Int -> String -> Msg) -> Msg -> List String -> List (Html Msg)
+viewNamesSection label updateName addName names =
+  let
+    horizontalInputs : List (Html Msg)
+    horizontalInputs = viewNames updateName 0 names
+  in (  [ div [] [ text label ]
+        ]
+    ++ horizontalInputs
+    ++ [ div [] [ button [ onClick addName ] [ text "+" ] ] ]
+    )
 
 view : Model -> Html Msg
 view model =
-  let
-    horizontalInputs : List (Html Msg)
-    horizontalInputs = viewHorizontalNames 0 model.horizontalNames
-  in div []
-    (  [ div [] [ text "Horizontal Names" ]
-       ]
-    ++ horizontalInputs
-    ++ [ div [] [ button [ onClick AddHorizontalNameAtBottom ] [ text "+" ] ] ]
+  div []
+    (  viewNamesSection "Horizontal Names:" ChangeHorizontalName AddHorizontalNameAtBottom model.horizontalNames
+    ++ viewNamesSection "Vertical Names:"   ChangeVerticalName   AddVerticalNameAtBottom   model.verticalNames
     )
