@@ -20,8 +20,33 @@ type alias InputNames =
   , verticalNames : Array String
   }
 
+type alias OffsetPair =
+  { offsetSameAxis : Int
+  , offsetOtherAxis : Int
+  }
+
+type alias CrosswordName =
+  { name : String
+  , availableIndexes : Array Int
+  }
+
+type alias CrosswordBuilder =
+  { horizontalCrosswordNames : Array CrosswordName
+  , verticalCrosswordNames : Array CrosswordName
+  }
+
+emptyCrosswordBuilder =
+  { horizontalCrosswordNames = Array.empty
+  , verticalCrosswordNames = Array.empty
+  }
+
+type alias Solution =
+  { horizontalNames : Array (String, OffsetPair)
+  , verticalNames : Array (String, OffsetPair)
+  }
+
 type alias CrosswordPossibilities =
-  {
+  { solutions : Array Solution
   }
 
 type alias Model =
@@ -51,7 +76,7 @@ type Msg
   | CalculateCrossword
 
 calculate : InputNames -> CrosswordPossibilities
-calculate _ = {}
+calculate _ = { solutions = Array.empty }
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
