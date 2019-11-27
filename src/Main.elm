@@ -1,5 +1,6 @@
 module Main exposing (..)
 
+import Array exposing (Array)
 import Browser
 import Html exposing (Html, Attribute, div, input, text, button)
 import Html.Attributes exposing (..)
@@ -15,8 +16,8 @@ main =
     }
 
 type alias InputNames =
-  { horizontalNames : List String
-  , verticalNames : List String
+  { horizontalNames : Array String
+  , verticalNames : Array String
   }
 
 type alias CrosswordPossibilities =
@@ -28,11 +29,14 @@ type alias Model =
   , maybeCrosswordPossibilities : Maybe CrosswordPossibilities
   }
 
+singletonEmptyString : Array String
+singletonEmptyString = Array.initialize 1 (\_ -> "")
+
 init : () -> (Model, Cmd Msg)
 init _ =
   ( { inputNames =
-      { horizontalNames = [ "" ]
-      , verticalNames = [ "" ]
+      { horizontalNames = singletonEmptyString
+      , verticalNames = singletonEmptyString
       }
       , maybeCrosswordPossibilities = Nothing
     }
@@ -46,18 +50,6 @@ type Msg
   | ChangeVerticalName Int String
   | CalculateCrossword
 
-updateListItem : Int -> a -> List a -> List a
-updateListItem index item list =
-  if index < 0
-    then list
-    else
-      case list of
-        [] -> []
-        x :: xs -> 
-          if index == 0
-            then item :: xs
-            else x :: updateListItem (index - 1) item xs
-
 calculate : InputNames -> CrosswordPossibilities
 calculate _ = {}
 
@@ -66,16 +58,16 @@ update msg model =
   case msg of
     AddHorizontalNameAtBottom ->
       let inputNames = model.inputNames
-      in ({ model | inputNames = { inputNames | horizontalNames = inputNames.horizontalNames ++ [""] } }, Cmd.none)
+      in ({ model | inputNames = { inputNames | horizontalNames = Array.append inputNames.horizontalNames singletonEmptyString } }, Cmd.none)
     ChangeHorizontalName index newName ->
       let inputNames = model.inputNames
-      in ({ model | inputNames = { inputNames | horizontalNames = updateListItem index newName inputNames.horizontalNames } }, Cmd.none)
+      in ({ model | inputNames = { inputNames | horizontalNames = Array.set index newName inputNames.horizontalNames } }, Cmd.none)
     AddVerticalNameAtBottom ->
       let inputNames = model.inputNames
-      in ({ model | inputNames = { inputNames | verticalNames = inputNames.verticalNames ++ [""] } }, Cmd.none)
+      in ({ model | inputNames = { inputNames | verticalNames = Array.append inputNames.verticalNames singletonEmptyString } }, Cmd.none)
     ChangeVerticalName index newName ->
       let inputNames = model.inputNames
-      in ({ model | inputNames = { inputNames | verticalNames = updateListItem index newName inputNames.verticalNames } }, Cmd.none)
+      in ({ model | inputNames = { inputNames | verticalNames = Array.set index newName inputNames.verticalNames } }, Cmd.none)
     CalculateCrossword ->
       ({ model | maybeCrosswordPossibilities = Just (calculate model.inputNames) }, Cmd.none)
 
@@ -83,19 +75,16 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
   Sub.none
 
-viewNames : (Int -> String -> Msg) -> Int -> List String -> List (Html Msg)
-viewNames updateName index names =
-  case names of
-    [] -> []
-    name :: remainingNames ->
-      div [] [ input [ placeholder "Name", value name, onInput (updateName index) ] [] ]
-      :: viewNames updateName (index + 1) remainingNames
+viewNames : (Int -> String -> Msg) -> Array String -> List (Html Msg)
+viewNames updateName names =
+  let perItem index name = div [] [ input [ placeholder "Name", value name, onInput (updateName index) ] [] ]
+  in Array.toList (Array.indexedMap perItem names)
 
-viewNamesSection : String -> (Int -> String -> Msg) -> Msg -> List String -> List (Html Msg)
+viewNamesSection : String -> (Int -> String -> Msg) -> Msg -> Array String -> List (Html Msg)
 viewNamesSection label updateName addName names =
   let
     horizontalInputs : List (Html Msg)
-    horizontalInputs = viewNames updateName 0 names
+    horizontalInputs = viewNames updateName names
   in (  [ div [] [ text label ]
         ]
     ++ horizontalInputs
