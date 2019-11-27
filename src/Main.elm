@@ -14,15 +14,27 @@ main =
     , view = view
     }
 
-type alias Model =
+type alias InputNames =
   { horizontalNames : List String
   , verticalNames : List String
   }
 
+type alias CrosswordPossibilities =
+  {
+  }
+
+type alias Model =
+  { inputNames : InputNames
+  , maybeCrosswordPossibilities : Maybe CrosswordPossibilities
+  }
+
 init : () -> (Model, Cmd Msg)
 init _ =
-  ( { horizontalNames = [ "" ]
-    , verticalNames = [ "" ]
+  ( { inputNames =
+      { horizontalNames = [ "" ]
+      , verticalNames = [ "" ]
+      }
+      , maybeCrosswordPossibilities = Nothing
     }
   , Cmd.none
   )
@@ -32,6 +44,7 @@ type Msg
   | ChangeHorizontalName Int String
   | AddVerticalNameAtBottom
   | ChangeVerticalName Int String
+  | CalculateCrossword
 
 updateListItem : Int -> a -> List a -> List a
 updateListItem index item list =
@@ -45,17 +58,26 @@ updateListItem index item list =
             then item :: xs
             else x :: updateListItem (index - 1) item xs
 
+calculate : InputNames -> CrosswordPossibilities
+calculate _ = {}
+
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
     AddHorizontalNameAtBottom ->
-      ({ model | horizontalNames = model.horizontalNames ++ [""] }, Cmd.none)
+      let inputNames = model.inputNames
+      in ({ model | inputNames = { inputNames | horizontalNames = inputNames.horizontalNames ++ [""] } }, Cmd.none)
     ChangeHorizontalName index newName ->
-      ({ model | horizontalNames = updateListItem index newName model.horizontalNames }, Cmd.none)
+      let inputNames = model.inputNames
+      in ({ model | inputNames = { inputNames | horizontalNames = updateListItem index newName inputNames.horizontalNames } }, Cmd.none)
     AddVerticalNameAtBottom ->
-      ({ model | verticalNames = model.verticalNames ++ [""] }, Cmd.none)
+      let inputNames = model.inputNames
+      in ({ model | inputNames = { inputNames | verticalNames = inputNames.verticalNames ++ [""] } }, Cmd.none)
     ChangeVerticalName index newName ->
-      ({ model | verticalNames = updateListItem index newName model.verticalNames }, Cmd.none)
+      let inputNames = model.inputNames
+      in ({ model | inputNames = { inputNames | verticalNames = updateListItem index newName inputNames.verticalNames } }, Cmd.none)
+    CalculateCrossword ->
+      ({ model | maybeCrosswordPossibilities = Just (calculate model.inputNames) }, Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -83,6 +105,7 @@ viewNamesSection label updateName addName names =
 view : Model -> Html Msg
 view model =
   div []
-    (  viewNamesSection "Horizontal Names:" ChangeHorizontalName AddHorizontalNameAtBottom model.horizontalNames
-    ++ viewNamesSection "Vertical Names:"   ChangeVerticalName   AddVerticalNameAtBottom   model.verticalNames
+    (  viewNamesSection "Horizontal Names:" ChangeHorizontalName AddHorizontalNameAtBottom model.inputNames.horizontalNames
+    ++ viewNamesSection "Vertical Names:"   ChangeVerticalName   AddVerticalNameAtBottom   model.inputNames.verticalNames
+    ++ [ div [] [ button [ onClick CalculateCrossword ] [ text "Create" ] ] ]
     )
